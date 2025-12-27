@@ -22,11 +22,12 @@
             transition: background-color 0.1s;
         }
         .cell.black { background-color: #1f2937; }
-        .cell.tajenka { background-color: #fef08a; } /* Žlutá pro tajenku */
+        .cell.tajenka { background-color: #fef08a; } 
         
-        /* Zvýraznění aktivního směru/slova */
-        .cell.active-highlight { background-color: #e0f2fe !important; } /* Světle modrá */
-        .cell.tajenka.active-highlight { background-color: #fde047 !important; } /* Tmavší žlutá */
+        /* Zvýraznění aktivního slova */
+        .cell.active-highlight { background-color: #bae6fd !important; } 
+        /* Pokud je to zároveň tajenka a je aktivní */
+        .cell.tajenka.active-highlight { background-color: #fde047 !important; }
 
         /* Inputy */
         .cell input {
@@ -35,8 +36,8 @@
             text-transform: uppercase; border: none; background: transparent;
             outline: none; padding: 0; margin: 0; color: #111827;
             border-radius: 0; cursor: default;
+            caret-color: transparent; /* Skryje blikající kurzor, vypadá to lépe */
         }
-        /* Focus styl řešíme v JS pomocí třídy active-highlight */
         .cell input:focus { background: transparent; } 
         
         /* Čísla */
@@ -78,29 +79,26 @@
             </div>
 
             <div id="game-content" class="hidden flex flex-col lg:flex-row h-full">
-                <!-- Levá část: Mřížka -->
+                <!-- Mřížka -->
                 <div class="flex-1 p-4 flex flex-col items-center justify-start border-r border-gray-100">
                     <div id="grid-container" class="crossword-grid shadow-md mb-6"></div>
                     
                     <div class="flex gap-2 w-full justify-center max-w-sm">
-                        <button onclick="checkGame()" class="flex-1 bg-green-600 text-white py-3 rounded shadow font-bold hover:bg-green-700">✓ Hotovo</button>
-                        <button onclick="revealLetter()" class="flex-1 bg-amber-500 text-white py-3 rounded shadow font-bold hover:bg-amber-600">? Pomoc</button>
+                        <button onclick="checkGame()" class="flex-1 bg-green-600 text-white py-3 rounded shadow font-bold hover:bg-green-700 transition">✓ Hotovo</button>
+                        <button onclick="revealLetter()" class="flex-1 bg-amber-500 text-white py-3 rounded shadow font-bold hover:bg-amber-600 transition">? Pomoc</button>
                     </div>
                     <div id="status-msg" class="mt-4 font-bold h-6 text-center text-lg"></div>
                     <p class="text-xs text-gray-400 mt-2">Tip: Dvojklik na buňku přepne směr psaní.</p>
                 </div>
 
-                <!-- Pravá část: Legenda -->
+                <!-- Legenda -->
                 <div class="w-full lg:w-96 bg-gray-50 p-4 flex flex-col h-[500px] lg:h-auto overflow-hidden">
                     <h3 class="font-bold text-gray-700 mb-2 border-b">LEGENDA</h3>
                     <div class="overflow-y-auto flex-1 pr-2 space-y-4">
-                        
-                        <!-- Tajenka Info -->
                         <div class="bg-yellow-100 p-2 rounded border border-yellow-200">
                             <span class="text-xs font-bold text-yellow-800 uppercase">Tajenka (svisle)</span>
                             <div id="tajenka-clue" class="font-bold text-gray-900">...</div>
                         </div>
-
                         <div>
                             <h4 class="font-bold text-xs text-gray-500 uppercase mb-1">Vodorovně</h4>
                             <ul id="clues-across" class="space-y-1 text-sm"></ul>
@@ -118,13 +116,7 @@
     <script>
         const JSON_URL = 'data/daily/daily_crossword.json';
         
-        let gameState = { 
-            grid: [], 
-            width: 13, height: 13, 
-            words: [] 
-        };
-        
-        // Globální stav pro směr psaní: 'H' (horizontal) nebo 'V' (vertical)
+        let gameState = { grid: [], width: 13, height: 13, words: [] };
         let currentDirection = 'H'; 
 
         async function init() {
@@ -156,22 +148,14 @@
                     isBlack: char === '#',
                     isTajenka: isTajenkaCell(r, c, data.tajenka_mask),
                     number: getWordNumberAt(r, c, data.words),
-                    // Předpočítáme, jaká slova prochází touto buňkou
                     wordsHere: getWordsAt(r, c, data.words)
                 })));
             }
         }
 
-        function isTajenkaCell(r, c, mask) {
-            return mask && mask.some(([tr, tc]) => tr === r && tc === c);
-        }
-
-        function getWordNumberAt(r, c, words) {
-            const w = words.find(w => w.row === r && w.col === c);
-            return w ? w.number : null;
-        }
-
-        // Zjistí, zda je buňka součástí vodorovného a/nebo svislého slova
+        function isTajenkaCell(r, c, mask) { return mask && mask.some(([tr, tc]) => tr === r && tc === c); }
+        function getWordNumberAt(r, c, words) { const w = words.find(w => w.row === r && w.col === c); return w ? w.number : null; }
+        
         function getWordsAt(r, c, words) {
             let res = { hasH: false, hasV: false };
             words.forEach(w => {
@@ -205,7 +189,6 @@
                         input.dataset.correct = cell.char;
                         input.maxLength = 1;
                         
-                        // EVENT LISTENERS PRO PSANÍ
                         input.addEventListener('keydown', handleKeyInput);
                         input.addEventListener('mousedown', (e) => handleCellClick(e, r, c, cell.wordsHere));
                         input.addEventListener('dblclick', () => toggleDirection());
@@ -217,21 +200,16 @@
                 });
             });
 
-            // Vykreslení legendy
             gameState.words.sort((a,b) => a.number - b.number).forEach(w => {
                 const li = document.createElement('li');
-                li.id = `clue-${w.number}-${w.direction}`; // ID pro highlight
+                li.id = `clue-${w.number}-${w.direction}`;
                 li.className = 'clue-item p-1 rounded flex gap-2';
                 li.innerHTML = `<span class="font-bold text-blue-600 w-5 text-right">${w.number}.</span><span>${w.clue}</span>`;
                 
-                // Kliknutí na legendu nastaví směr a skočí na slovo
                 li.onclick = () => {
                     currentDirection = w.direction;
                     const inp = findCell(w.row, w.col);
-                    if(inp) {
-                        inp.focus();
-                        inp.select();
-                    }
+                    if(inp) { inp.focus(); inp.select(); }
                 };
                 
                 if (w.direction === 'H') listAcross.appendChild(li);
@@ -242,51 +220,42 @@
         // --- Logika Ovládání ---
 
         function handleCellClick(e, r, c, wordsHere) {
-            // Pokud už máme focus, neděláme nic (aby fungoval double click),
-            // ale pokud klikneme na jinou buňku, zkusíme odhadnout směr.
             if (document.activeElement === e.target) return;
-
-            // Chytrý výběr směru:
-            // 1. Pokud buňka patří jen do jednoho směru, vybereme ten.
-            // 2. Pokud do obou, zachováme aktuální, pokud je validní. Jinak preferujeme H.
-            if (wordsHere.hasH && !wordsHere.hasV) {
-                currentDirection = 'H';
-            } else if (wordsHere.hasV && !wordsHere.hasH) {
-                currentDirection = 'V';
-            } else {
-                // Je v obou směrech -> neměníme, pokud to není nutné
-            }
+            // Chytrá detekce směru
+            if (wordsHere.hasH && !wordsHere.hasV) currentDirection = 'H';
+            else if (wordsHere.hasV && !wordsHere.hasH) currentDirection = 'V';
+            
             highlightActiveWord(r, c);
         }
 
         function toggleDirection() {
             currentDirection = currentDirection === 'H' ? 'V' : 'H';
-            // Znovu překreslit highlight pro aktuálně focusnutý element
             const active = document.activeElement;
-            if (active && active.tagName === 'INPUT') {
-                highlightActiveWord(+active.dataset.r, +active.dataset.c);
-            }
+            if (active && active.tagName === 'INPUT') highlightActiveWord(+active.dataset.r, +active.dataset.c);
         }
 
         function handleKeyInput(e) {
             const r = +e.target.dataset.r;
             const c = +e.target.dataset.c;
             
-            // 1. Písmena (A-Z)
+            // 1. Písmena
             if (e.key.match(/^[a-zA-ZáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]$/)) {
-                e.preventDefault(); // Zabráníme zdvojení znaku (někdy)
+                e.preventDefault();
                 e.target.value = e.key.toUpperCase();
-                
-                // Posun podle směru
                 moveFocus(r, c, 1);
             }
-            // 2. Backspace (Smazat a zpět)
+            // 2. Backspace (Vylepšený)
             else if (e.key === 'Backspace') {
                 e.preventDefault();
-                e.target.value = '';
-                moveFocus(r, c, -1);
+                if (e.target.value !== '') {
+                    // Pokud buňka NENÍ prázdná, smaž ji a ZŮSTAŇ
+                    e.target.value = '';
+                } else {
+                    // Pokud buňka JE prázdná, jdi zpět a smaž tu předchozí
+                    moveFocusBackAndClear(r, c);
+                }
             }
-            // 3. Šipky (manuální posun)
+            // 3. Šipky
             else if (e.key === 'ArrowRight') findCell(r, c + 1)?.focus();
             else if (e.key === 'ArrowLeft') findCell(r, c - 1)?.focus();
             else if (e.key === 'ArrowDown') findCell(r + 1, c)?.focus();
@@ -295,18 +264,23 @@
 
         function moveFocus(r, c, delta) {
             let nr = r, nc = c;
-            
-            if (currentDirection === 'H') {
-                nc += delta;
-            } else {
-                nr += delta;
-            }
+            if (currentDirection === 'H') nc += delta;
+            else nr += delta;
 
             const nextInput = findCell(nr, nc);
-            if (nextInput) {
-                nextInput.focus();
-                // Volitelně: vybrat text, aby se dal přepsat
-                // nextInput.select(); 
+            if (nextInput) nextInput.focus();
+        }
+
+        // Speciální funkce pro Backspace: Jdi dozadu a smaž
+        function moveFocusBackAndClear(r, c) {
+            let nr = r, nc = c;
+            if (currentDirection === 'H') nc -= 1;
+            else nr -= 1;
+
+            const prevInput = findCell(nr, nc);
+            if (prevInput) {
+                prevInput.focus();
+                prevInput.value = ''; // Smazat obsah předchozí buňky
             }
         }
 
@@ -314,38 +288,55 @@
             return document.querySelector(`input[data-r="${r}"][data-c="${c}"]`);
         }
         
-        // Vizuální vylepšení: Zvýrazní celý řádek/sloupec podle směru
+        // Zvýraznění POUZE aktivního slova (ne celého řádku/sloupce)
         function highlightActiveWord(r, c) {
-            // Reset všech highlightů
+            // Reset
             document.querySelectorAll('.active-highlight').forEach(el => el.classList.remove('active-highlight'));
             document.querySelectorAll('.active-clue').forEach(el => el.classList.remove('active-clue'));
 
-            // Najdeme inputy v aktuálním směru
-            // Toto je zjednodušená vizualizace (svítí celý řádek/sloupec), pro komplexní křížovku stačí
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(inp => {
-                const ir = +inp.dataset.r;
-                const ic = +inp.dataset.c;
+            // Algoritmus: Najdi začátek a konec slova v aktuálním směru
+            let start = (currentDirection === 'H') ? c : r;
+            let end = start;
+
+            // Hledání začátku (doleva/nahoru)
+            while (true) {
+                let prev = start - 1;
+                let checkR = (currentDirection === 'H') ? r : prev;
+                let checkC = (currentDirection === 'H') ? prev : c;
                 
-                let shouldHighlight = false;
-                if (currentDirection === 'H' && ir === r) shouldHighlight = true; // Celý řádek
-                if (currentDirection === 'V' && ic === c) shouldHighlight = true; // Celý sloupec
+                // Pokud jsme mimo mřížku nebo narazíme na černé políčko, konec
+                if (prev < 0 || isBlackCell(checkR, checkC)) break;
+                start--;
+            }
+
+            // Hledání konce (doprava/dolů)
+            const limit = (currentDirection === 'H') ? gameState.width : gameState.height;
+            while (true) {
+                let next = end + 1;
+                let checkR = (currentDirection === 'H') ? r : next;
+                let checkC = (currentDirection === 'H') ? next : c;
                 
-                // Lepší logika: Highlight jen po černé políčko (skutečné slovo)
-                // Pro MVP stačí celý řádek/sloupec, pomáhá to orientaci
-                if (shouldHighlight) {
-                    inp.parentElement.classList.add('active-highlight');
+                if (next >= limit || isBlackCell(checkR, checkC)) break;
+                end++;
+            }
+
+            // Aplikace highlightu na nalezený rozsah
+            for (let i = start; i <= end; i++) {
+                let cellInput;
+                if (currentDirection === 'H') cellInput = findCell(r, i);
+                else cellInput = findCell(i, c);
+                
+                if (cellInput) {
+                    cellInput.parentElement.classList.add('active-highlight');
                 }
-            });
-            
-            // Zvýraznění legendy (pokud trefíme začátek slova)
-            // Tohle je složitější trefit přesně, protože na jedné buňce může být střed slova.
-            // Ale můžeme najít slovo, které prochází touto buňkou v aktuálním směru.
+            }
+
+            // Zvýraznění legendy
             const activeWord = gameState.words.find(w => {
                 if (w.direction !== currentDirection) return false;
+                // Kontrola, jestli focus (r, c) padá do rozsahu slova
                 if (currentDirection === 'H') return w.row === r && c >= w.col && c < w.col + w.word.length;
-                if (currentDirection === 'V') return w.col === c && r >= w.row && r < w.row + w.word.length;
-                return false;
+                else return w.col === c && r >= w.row && r < w.row + w.word.length;
             });
 
             if (activeWord) {
@@ -355,6 +346,12 @@
                     clueEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }
+        }
+
+        function isBlackCell(r, c) {
+            // Bezpečné ověření, zda je buňka černá
+            if (r < 0 || r >= gameState.height || c < 0 || c >= gameState.width) return true;
+            return gameState.grid[r][c].isBlack;
         }
 
         function checkGame() {
