@@ -1,110 +1,154 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="cs" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dnešní Křížovka</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            850: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
+        body {
+            background-color: #111827; /* Gray 900 */
+            color: #e5e7eb; /* Gray 200 */
+        }
+
         /* Mřížka */
         .crossword-grid {
             display: grid;
             gap: 1px;
-            background-color: #374151;
+            background-color: #374151; /* Barva mřížky */
             border: 2px solid #374151;
             margin: 0 auto;
             touch-action: manipulation;
         }
+        
+        /* Buňky */
         .cell {
             position: relative;
-            background-color: white;
+            background-color: #1f2937; /* Gray 800 - základní buňka */
             aspect-ratio: 1;
             transition: background-color 0.1s;
         }
-        .cell.black { background-color: #1f2937; }
-        .cell.tajenka { background-color: #fef08a; } 
         
-        /* Zvýraznění aktivního slova */
-        .cell.active-highlight { background-color: #bae6fd !important; } 
-        /* Pokud je to zároveň tajenka a je aktivní */
-        .cell.tajenka.active-highlight { background-color: #fde047 !important; }
+        /* Černá políčka (teď spíše 'prázdná' v tmavém režimu) */
+        .cell.black { 
+            background-color: #000000; 
+        }
+        
+        /* Tajenka (zlatavá, ale ne moc svítivá) */
+        .cell.tajenka { 
+            background-color: #854d0e; /* Yellow 800 */
+            color: #fef08a; /* Světlý text */
+        } 
+        
+        /* Zvýraznění aktivního slova (tmavě modrá) */
+        .cell.active-highlight { 
+            background-color: #1e40af !important; /* Blue 800 */
+        } 
+        .cell.tajenka.active-highlight { 
+            background-color: #a16207 !important; /* Yellow 700 */
+        }
 
         /* Inputy */
         .cell input {
             width: 100%; height: 100%;
             text-align: center; font-size: 1.1rem; font-weight: bold;
             text-transform: uppercase; border: none; background: transparent;
-            outline: none; padding: 0; margin: 0; color: #111827;
+            outline: none; padding: 0; margin: 0; 
+            color: #ffffff; /* Bílý text */
             border-radius: 0; cursor: default;
-            caret-color: transparent; /* Skryje blikající kurzor, vypadá to lépe */
+            caret-color: transparent;
         }
-        .cell input:focus { background: transparent; } 
         
-        /* Čísla */
+        /* Čísla (šedivá) */
         .cell-number {
             position: absolute; top: 1px; left: 2px;
-            font-size: 0.6rem; color: #6b7280; pointer-events: none; line-height: 1;
+            font-size: 0.6rem; color: #9ca3af; pointer-events: none; line-height: 1;
         }
         
         /* Legenda */
-        .clue-item { cursor: pointer; transition: background 0.2s; }
-        .clue-item:hover { background-color: #eff6ff; }
-        .clue-item.active-clue { background-color: #dbeafe; border-left: 4px solid #2563eb; }
+        .clue-item { 
+            cursor: pointer; 
+            transition: background 0.2s; 
+            color: #d1d5db; /* Gray 300 */
+        }
+        .clue-item:hover { background-color: #374151; }
+        .clue-item.active-clue { 
+            background-color: #1e3a8a; /* Dark Blue */
+            border-left: 4px solid #60a5fa; /* Light Blue accent */
+        }
         
         /* Loader */
         .loader {
-            border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6;
+            border: 4px solid #374151; border-top: 4px solid #3b82f6;
             border-radius: 50%; width: 40px; height: 40px;
             animation: spin 1s linear infinite; margin: 20px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        @media (max-width: 600px) { .cell input { font-size: 0.9rem; } }
+        @media (max-width: 600px) { .cell input { font-size: 0.85rem; } }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col font-sans">
+<body class="min-h-screen flex flex-col font-sans">
 
     <main class="flex-grow p-2 md:p-4">
-        <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden min-h-[600px]">
-            <header class="bg-blue-600 text-white p-4 text-center">
-                <h1 class="text-2xl md:text-3xl font-extrabold">Dnešní Křížovka</h1>
-                <div class="mt-2 inline-block bg-blue-700 bg-opacity-50 px-4 py-1 rounded-full text-sm">
-                    Téma: <span id="theme-display" class="font-bold">Načítání...</span>
+        <div class="max-w-7xl mx-auto bg-gray-800 rounded-xl shadow-2xl overflow-hidden min-h-[600px] border border-gray-700">
+            <header class="bg-gray-900 text-white p-4 text-center border-b border-gray-700">
+                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-blue-400">Dnešní Křížovka</h1>
+                <div class="mt-2 inline-block bg-gray-700 px-4 py-1 rounded-full text-sm border border-gray-600">
+                    Téma: <span id="theme-display" class="font-bold text-blue-300">Načítání...</span>
                 </div>
             </header>
 
             <div id="loading-state" class="py-20 text-center">
                 <div class="loader"></div>
-                <p class="text-gray-500">Stahuji křížovku...</p>
+                <p class="text-gray-400 mt-4">Generuji mřížku...</p>
             </div>
 
             <div id="game-content" class="hidden flex flex-col lg:flex-row h-full">
                 <!-- Mřížka -->
-                <div class="flex-1 p-4 flex flex-col items-center justify-start border-r border-gray-100">
-                    <div id="grid-container" class="crossword-grid shadow-md mb-6"></div>
+                <div class="flex-1 p-4 flex flex-col items-center justify-start border-r border-gray-700">
+                    <div id="grid-container" class="crossword-grid shadow-xl mb-6"></div>
                     
                     <div class="flex gap-2 w-full justify-center max-w-sm">
-                        <button onclick="checkGame()" class="flex-1 bg-green-600 text-white py-3 rounded shadow font-bold hover:bg-green-700 transition">✓ Hotovo</button>
-                        <button onclick="revealLetter()" class="flex-1 bg-amber-500 text-white py-3 rounded shadow font-bold hover:bg-amber-600 transition">? Pomoc</button>
+                        <button onclick="checkGame()" class="flex-1 bg-green-700 hover:bg-green-600 text-white py-3 rounded shadow font-bold transition">✓ Hotovo</button>
+                        <button onclick="revealLetter()" class="flex-1 bg-yellow-700 hover:bg-yellow-600 text-white py-3 rounded shadow font-bold transition">? Pomoc</button>
                     </div>
                     <div id="status-msg" class="mt-4 font-bold h-6 text-center text-lg"></div>
-                    <p class="text-xs text-gray-400 mt-2">Tip: Dvojklik na buňku přepne směr psaní.</p>
+                    <p class="text-xs text-gray-500 mt-2">Dvojklik na buňku přepne směr.</p>
                 </div>
 
                 <!-- Legenda -->
-                <div class="w-full lg:w-96 bg-gray-50 p-4 flex flex-col h-[500px] lg:h-auto overflow-hidden">
-                    <h3 class="font-bold text-gray-700 mb-2 border-b">LEGENDA</h3>
-                    <div class="overflow-y-auto flex-1 pr-2 space-y-4">
-                        <div class="bg-yellow-100 p-2 rounded border border-yellow-200">
-                            <span class="text-xs font-bold text-yellow-800 uppercase">Tajenka (svisle)</span>
-                            <div id="tajenka-clue" class="font-bold text-gray-900">...</div>
+                <div class="w-full lg:w-96 bg-gray-850 p-4 flex flex-col h-[500px] lg:h-auto overflow-hidden">
+                    <h3 class="font-bold text-gray-400 mb-2 border-b border-gray-700 pb-2">LEGENDA</h3>
+                    <div class="overflow-y-auto flex-1 pr-2 space-y-6 custom-scrollbar">
+                        
+                        <div class="bg-yellow-900/30 p-3 rounded border border-yellow-800/50">
+                            <span class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Tajenka (svisle)</span>
+                            <div id="tajenka-clue" class="font-bold text-yellow-100 mt-1">...</div>
                         </div>
+
                         <div>
-                            <h4 class="font-bold text-xs text-gray-500 uppercase mb-1">Vodorovně</h4>
+                            <h4 class="font-bold text-xs text-gray-500 uppercase mb-2">Vodorovně</h4>
                             <ul id="clues-across" class="space-y-1 text-sm"></ul>
                         </div>
                         <div>
-                            <h4 class="font-bold text-xs text-gray-500 uppercase mb-1">Svisle</h4>
+                            <h4 class="font-bold text-xs text-gray-500 uppercase mb-2">Svisle</h4>
                             <ul id="clues-down" class="space-y-1 text-sm"></ul>
                         </div>
                     </div>
@@ -116,7 +160,7 @@
     <script>
         const JSON_URL = 'data/daily/daily_crossword.json';
         
-        let gameState = { grid: [], width: 13, height: 13, words: [] };
+        let gameState = { grid: [], width: 16, height: 16, words: [] };
         let currentDirection = 'H'; 
 
         async function init() {
@@ -171,7 +215,7 @@
             const listDown = document.getElementById('clues-down');
 
             container.style.gridTemplateColumns = `repeat(${gameState.width}, 1fr)`;
-            const size = Math.min(35, Math.floor((window.innerWidth - 32) / gameState.width));
+            const size = Math.min(32, Math.floor((window.innerWidth - 32) / gameState.width));
 
             gameState.grid.forEach((row, r) => {
                 row.forEach((cell, c) => {
@@ -204,7 +248,7 @@
                 const li = document.createElement('li');
                 li.id = `clue-${w.number}-${w.direction}`;
                 li.className = 'clue-item p-1 rounded flex gap-2';
-                li.innerHTML = `<span class="font-bold text-blue-600 w-5 text-right">${w.number}.</span><span>${w.clue}</span>`;
+                li.innerHTML = `<span class="font-bold text-blue-400 w-5 text-right">${w.number}.</span><span>${w.clue}</span>`;
                 
                 li.onclick = () => {
                     currentDirection = w.direction;
@@ -217,14 +261,10 @@
             });
         }
 
-        // --- Logika Ovládání ---
-
         function handleCellClick(e, r, c, wordsHere) {
             if (document.activeElement === e.target) return;
-            // Chytrá detekce směru
             if (wordsHere.hasH && !wordsHere.hasV) currentDirection = 'H';
             else if (wordsHere.hasV && !wordsHere.hasH) currentDirection = 'V';
-            
             highlightActiveWord(r, c);
         }
 
@@ -238,24 +278,19 @@
             const r = +e.target.dataset.r;
             const c = +e.target.dataset.c;
             
-            // 1. Písmena
             if (e.key.match(/^[a-zA-ZáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]$/)) {
                 e.preventDefault();
                 e.target.value = e.key.toUpperCase();
                 moveFocus(r, c, 1);
             }
-            // 2. Backspace (Vylepšený)
             else if (e.key === 'Backspace') {
                 e.preventDefault();
                 if (e.target.value !== '') {
-                    // Pokud buňka NENÍ prázdná, smaž ji a ZŮSTAŇ
-                    e.target.value = '';
+                    e.target.value = ''; // Jen smaž
                 } else {
-                    // Pokud buňka JE prázdná, jdi zpět a smaž tu předchozí
-                    moveFocusBackAndClear(r, c);
+                    moveFocusBackAndClear(r, c); // Smaž předchozí
                 }
             }
-            // 3. Šipky
             else if (e.key === 'ArrowRight') findCell(r, c + 1)?.focus();
             else if (e.key === 'ArrowLeft') findCell(r, c - 1)?.focus();
             else if (e.key === 'ArrowDown') findCell(r + 1, c)?.focus();
@@ -264,77 +299,58 @@
 
         function moveFocus(r, c, delta) {
             let nr = r, nc = c;
-            if (currentDirection === 'H') nc += delta;
-            else nr += delta;
-
+            if (currentDirection === 'H') nc += delta; else nr += delta;
             const nextInput = findCell(nr, nc);
             if (nextInput) nextInput.focus();
         }
 
-        // Speciální funkce pro Backspace: Jdi dozadu a smaž
         function moveFocusBackAndClear(r, c) {
             let nr = r, nc = c;
-            if (currentDirection === 'H') nc -= 1;
-            else nr -= 1;
-
+            if (currentDirection === 'H') nc -= 1; else nr -= 1;
             const prevInput = findCell(nr, nc);
             if (prevInput) {
                 prevInput.focus();
-                prevInput.value = ''; // Smazat obsah předchozí buňky
+                prevInput.value = '';
             }
         }
 
-        function findCell(r, c) {
-            return document.querySelector(`input[data-r="${r}"][data-c="${c}"]`);
+        function findCell(r, c) { return document.querySelector(`input[data-r="${r}"][data-c="${c}"]`); }
+        function isBlackCell(r, c) {
+            if (r < 0 || r >= gameState.height || c < 0 || c >= gameState.width) return true;
+            return gameState.grid[r][c].isBlack;
         }
-        
-        // Zvýraznění POUZE aktivního slova (ne celého řádku/sloupce)
+
         function highlightActiveWord(r, c) {
-            // Reset
             document.querySelectorAll('.active-highlight').forEach(el => el.classList.remove('active-highlight'));
             document.querySelectorAll('.active-clue').forEach(el => el.classList.remove('active-clue'));
 
-            // Algoritmus: Najdi začátek a konec slova v aktuálním směru
             let start = (currentDirection === 'H') ? c : r;
             let end = start;
 
-            // Hledání začátku (doleva/nahoru)
             while (true) {
                 let prev = start - 1;
                 let checkR = (currentDirection === 'H') ? r : prev;
                 let checkC = (currentDirection === 'H') ? prev : c;
-                
-                // Pokud jsme mimo mřížku nebo narazíme na černé políčko, konec
                 if (prev < 0 || isBlackCell(checkR, checkC)) break;
                 start--;
             }
 
-            // Hledání konce (doprava/dolů)
             const limit = (currentDirection === 'H') ? gameState.width : gameState.height;
             while (true) {
                 let next = end + 1;
                 let checkR = (currentDirection === 'H') ? r : next;
                 let checkC = (currentDirection === 'H') ? next : c;
-                
                 if (next >= limit || isBlackCell(checkR, checkC)) break;
                 end++;
             }
 
-            // Aplikace highlightu na nalezený rozsah
             for (let i = start; i <= end; i++) {
-                let cellInput;
-                if (currentDirection === 'H') cellInput = findCell(r, i);
-                else cellInput = findCell(i, c);
-                
-                if (cellInput) {
-                    cellInput.parentElement.classList.add('active-highlight');
-                }
+                let cellInput = (currentDirection === 'H') ? findCell(r, i) : findCell(i, c);
+                if (cellInput) cellInput.parentElement.classList.add('active-highlight');
             }
 
-            // Zvýraznění legendy
             const activeWord = gameState.words.find(w => {
                 if (w.direction !== currentDirection) return false;
-                // Kontrola, jestli focus (r, c) padá do rozsahu slova
                 if (currentDirection === 'H') return w.row === r && c >= w.col && c < w.col + w.word.length;
                 else return w.col === c && r >= w.row && r < w.row + w.word.length;
             });
@@ -348,33 +364,30 @@
             }
         }
 
-        function isBlackCell(r, c) {
-            // Bezpečné ověření, zda je buňka černá
-            if (r < 0 || r >= gameState.height || c < 0 || c >= gameState.width) return true;
-            return gameState.grid[r][c].isBlack;
-        }
-
         function checkGame() {
             let err = 0, empty = 0;
             document.querySelectorAll('input').forEach(i => {
                 const val = i.value.toUpperCase();
-                i.parentElement.classList.remove('bg-red-100', 'bg-green-100');
+                i.parentElement.classList.remove('bg-red-900', 'bg-green-900');
+                i.style.color = '#ffffff'; // Reset barvy
+                
                 if(!val) empty++;
                 else if(val !== i.dataset.correct) {
-                    err++; i.parentElement.classList.add('bg-red-100');
-                    i.style.color = 'red';
+                    err++; 
+                    i.parentElement.classList.add('bg-red-900');
+                    i.style.color = '#fca5a5'; // Světle červená
                 } else {
-                    i.parentElement.classList.add('bg-green-100');
-                    i.style.color = 'green';
+                    i.parentElement.classList.add('bg-green-900');
+                    i.style.color = '#86efac'; // Světle zelená
                 }
             });
             const status = document.getElementById('status-msg');
             if(err===0 && empty===0) {
                 status.innerText = "🎉 Perfektní! Vše správně.";
-                status.className = "mt-4 font-bold h-6 text-center text-green-600 animate-bounce";
+                status.className = "mt-4 font-bold h-6 text-center text-green-400 animate-bounce";
             } else {
                 status.innerText = `Chyb: ${err}, Prázdných: ${empty}`;
-                status.className = "mt-4 font-bold h-6 text-center text-red-600";
+                status.className = "mt-4 font-bold h-6 text-center text-red-400";
             }
         }
 
@@ -383,7 +396,9 @@
             if(bad.length) {
                 const el = bad[Math.floor(Math.random()*bad.length)];
                 el.value = el.dataset.correct;
-                el.style.color = 'blue';
+                el.style.color = '#60a5fa'; // Blue 400
+                el.parentElement.style.backgroundColor = '#1e3a8a';
+                setTimeout(() => el.parentElement.style.backgroundColor = '', 500);
             }
         }
 
