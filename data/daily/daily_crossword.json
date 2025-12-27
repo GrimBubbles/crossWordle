@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "theme": "Prosincový svátek",
+    "tajenka": "VÁNOCE",
+    "width": 16,
+    "height": 6,
+    "generated_at": "now"
+  },
+  "grid_data": [
+    {
+      "row": 0,
+      "word": "ROVNICE",
+      "clue": "Matematický zápis",
+      "start_col": 6,
+      "tajenka_idx_in_word": 2
+    },
+    {
+      "row": 1,
+      "word": "MOKRÁ",
+      "clue": "Namočená",
+      "start_col": 4,
+      "tajenka_idx_in_word": 4
+    },
+    {
+      "row": 2,
+      "word": "ZÁKONITÝ",
+      "clue": "Podle pravidel",
+      "start_col": 4,
+      "tajenka_idx_in_word": 4
+    },
+    {
+      "row": 3,
+      "word": "PŘEHODNOTIT",
+      "clue": "Znovu posoudit",
+      "start_col": 1,
+      "tajenka_idx_in_word": 7
+    },
+    {
+      "row": 4,
+      "word": "ZRCADLO",
+      "clue": "Předmět odrazu",
+      "start_col": 6,
+      "tajenka_idx_in_word": 2
+    },
+    {
+      "row": 5,
+      "word": "SOUČET",
+      "clue": "Výsledek sčítání",
+      "start_col": 4,
+      "tajenka_idx_in_word": 4
+    }
+  ]
+}
