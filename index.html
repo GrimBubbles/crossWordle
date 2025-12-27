@@ -23,15 +23,15 @@
     </script>
     <style>
         body {
-            background-color: #111827; /* Gray 900 */
-            color: #e5e7eb; /* Gray 200 */
+            background-color: #111827;
+            color: #e5e7eb;
         }
 
         /* Mřížka */
         .crossword-grid {
             display: grid;
             gap: 1px;
-            background-color: #374151; /* Barva mřížky */
+            background-color: #374151;
             border: 2px solid #374151;
             margin: 0 auto;
             touch-action: manipulation;
@@ -40,29 +40,21 @@
         /* Buňky */
         .cell {
             position: relative;
-            background-color: #1f2937; /* Gray 800 - základní buňka */
+            background-color: #1f2937;
             aspect-ratio: 1;
-            transition: background-color 0.1s;
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
         }
         
-        /* Černá políčka (teď spíše 'prázdná' v tmavém režimu) */
-        .cell.black { 
-            background-color: #000000; 
-        }
+        .cell.black { background-color: #000000; }
+        .cell.tajenka { background-color: #854d0e; color: #fef08a; } 
         
-        /* Tajenka (zlatavá, ale ne moc svítivá) */
-        .cell.tajenka { 
-            background-color: #854d0e; /* Yellow 800 */
-            color: #fef08a; /* Světlý text */
-        } 
-        
-        /* Zvýraznění aktivního slova (tmavě modrá) */
-        .cell.active-highlight { 
-            background-color: #1e40af !important; /* Blue 800 */
-        } 
-        .cell.tajenka.active-highlight { 
-            background-color: #a16207 !important; /* Yellow 700 */
-        }
+        /* Zvýraznění aktivního slova */
+        .cell.active-highlight { background-color: #1e40af !important; } 
+        .cell.tajenka.active-highlight { background-color: #a16207 !important; }
+
+        /* KONTROLA - Barvy */
+        .cell.check-correct { background-color: #064e3b !important; }
+        .cell.check-wrong { background-color: #7f1d1d !important; }
 
         /* Inputy */
         .cell input {
@@ -70,12 +62,16 @@
             text-align: center; font-size: 1.1rem; font-weight: bold;
             text-transform: uppercase; border: none; background: transparent;
             outline: none; padding: 0; margin: 0; 
-            color: #ffffff; /* Bílý text */
+            color: #ffffff;
             border-radius: 0; cursor: default;
             caret-color: transparent;
+            transition: color 0.5s ease-in-out;
         }
         
-        /* Čísla (šedivá) */
+        .cell input.text-correct { color: #86efac !important; }
+        .cell input.text-wrong { color: #fca5a5 !important; }
+
+        /* Čísla */
         .cell-number {
             position: absolute; top: 1px; left: 2px;
             font-size: 0.6rem; color: #9ca3af; pointer-events: none; line-height: 1;
@@ -83,14 +79,11 @@
         
         /* Legenda */
         .clue-item { 
-            cursor: pointer; 
-            transition: background 0.2s; 
-            color: #d1d5db; /* Gray 300 */
+            cursor: pointer; transition: background 0.2s; color: #d1d5db;
         }
         .clue-item:hover { background-color: #374151; }
         .clue-item.active-clue { 
-            background-color: #1e3a8a; /* Dark Blue */
-            border-left: 4px solid #60a5fa; /* Light Blue accent */
+            background-color: #1e3a8a; border-left: 4px solid #60a5fa;
         }
         
         /* Loader */
@@ -101,12 +94,41 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
+        /* Modal Backdrop */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+        }
+
         @media (max-width: 600px) { .cell input { font-size: 0.85rem; } }
     </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans">
+<body class="min-h-screen flex flex-col font-sans relative">
 
-    <main class="flex-grow p-2 md:p-4">
+    <!-- MODÁLNÍ OKNO PRO TAJENKU -->
+    <div id="tajenka-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop opacity-0 transition-opacity duration-300">
+        <div class="bg-gray-800 border-2 border-yellow-600 rounded-2xl shadow-2xl max-w-md w-full p-6 text-center transform scale-95 transition-transform duration-300" id="tajenka-modal-content">
+            <div class="text-6xl mb-4">🏆</div>
+            <h2 class="text-3xl font-bold text-yellow-400 mb-2">Tajenka vyluštěna!</h2>
+            <p class="text-gray-300 mb-6">Gratuluji, tajenka je správně.</p>
+            
+            <div class="bg-gray-900 p-4 rounded-lg mb-8 border border-gray-700">
+                <p class="text-sm text-gray-500 uppercase tracking-widest mb-1">Řešení</p>
+                <p id="modal-tajenka-word" class="text-2xl font-bold text-white tracking-widest">---</p>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button onclick="continueGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition shadow-lg">
+                    Pokračovat v luštění
+                </button>
+                <button onclick="finishGameAuto()" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 py-3 rounded-xl font-bold transition">
+                    Vyplnit zbytek a skončit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow p-2 md:p-4 blur-0 transition-all duration-300" id="main-content">
         <div class="max-w-7xl mx-auto bg-gray-800 rounded-xl shadow-2xl overflow-hidden min-h-[600px] border border-gray-700">
             <header class="bg-gray-900 text-white p-4 text-center border-b border-gray-700">
                 <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-blue-400">Dnešní Křížovka</h1>
@@ -126,11 +148,11 @@
                     <div id="grid-container" class="crossword-grid shadow-xl mb-6"></div>
                     
                     <div class="flex gap-2 w-full justify-center max-w-sm">
-                        <button onclick="checkGame()" class="flex-1 bg-green-700 hover:bg-green-600 text-white py-3 rounded shadow font-bold transition">✓ Hotovo</button>
-                        <button onclick="revealLetter()" class="flex-1 bg-yellow-700 hover:bg-yellow-600 text-white py-3 rounded shadow font-bold transition">? Pomoc</button>
+                        <button onclick="checkGame()" class="flex-1 bg-green-700 hover:bg-green-600 text-white py-3 rounded shadow font-bold transition duration-200">✓ Zkontrolovat</button>
+                        <button onclick="revealLetter()" class="flex-1 bg-yellow-700 hover:bg-yellow-600 text-white py-3 rounded shadow font-bold transition duration-200">? Pomoc</button>
                     </div>
-                    <div id="status-msg" class="mt-4 font-bold h-6 text-center text-lg"></div>
-                    <p class="text-xs text-gray-500 mt-2">Dvojklik na buňku přepne směr.</p>
+                    
+                    <div id="status-msg" class="mt-4 font-bold h-8 text-center text-xl transition-all duration-500"></div>
                 </div>
 
                 <!-- Legenda -->
@@ -160,8 +182,10 @@
     <script>
         const JSON_URL = 'data/daily/daily_crossword.json';
         
-        let gameState = { grid: [], width: 16, height: 16, words: [] };
+        let gameState = { grid: [], width: 16, height: 16, words: [], tajenkaMask: [] };
         let currentDirection = 'H'; 
+        let checkTimeout = null;
+        let tajenkaFound = false; // Příznak, zda už byla tajenka nalezena (aby okno nevyskakovalo pořád)
 
         async function init() {
             try {
@@ -185,6 +209,7 @@
             gameState.width = data.meta.width;
             gameState.height = data.meta.height;
             gameState.words = data.words;
+            gameState.tajenkaMask = data.tajenka_mask || []; // Uložíme masku tajenky globálně
             
             if (data.grid) {
                 gameState.grid = data.grid.map((row, r) => row.map((char, c) => ({
@@ -237,6 +262,11 @@
                         input.addEventListener('mousedown', (e) => handleCellClick(e, r, c, cell.wordsHere));
                         input.addEventListener('dblclick', () => toggleDirection());
                         input.addEventListener('focus', () => highlightActiveWord(r, c));
+                        // Kontrola tajenky při každé změně
+                        input.addEventListener('input', () => {
+                            // Malé zpoždění, aby se stihla zapsat hodnota
+                            setTimeout(checkTajenkaLive, 100);
+                        });
 
                         div.appendChild(input);
                     }
@@ -261,6 +291,8 @@
             });
         }
 
+        // --- Logika Ovládání ---
+
         function handleCellClick(e, r, c, wordsHere) {
             if (document.activeElement === e.target) return;
             if (wordsHere.hasH && !wordsHere.hasV) currentDirection = 'H';
@@ -277,24 +309,32 @@
         function handleKeyInput(e) {
             const r = +e.target.dataset.r;
             const c = +e.target.dataset.c;
-            
+            clearCheckStyle(e.target);
+
             if (e.key.match(/^[a-zA-ZáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]$/)) {
                 e.preventDefault();
                 e.target.value = e.key.toUpperCase();
                 moveFocus(r, c, 1);
+                // Kontrola tajenky i zde pro jistotu
+                setTimeout(checkTajenkaLive, 50);
             }
             else if (e.key === 'Backspace') {
                 e.preventDefault();
                 if (e.target.value !== '') {
-                    e.target.value = ''; // Jen smaž
+                    e.target.value = '';
                 } else {
-                    moveFocusBackAndClear(r, c); // Smaž předchozí
+                    moveFocusBackAndClear(r, c);
                 }
             }
             else if (e.key === 'ArrowRight') findCell(r, c + 1)?.focus();
             else if (e.key === 'ArrowLeft') findCell(r, c - 1)?.focus();
             else if (e.key === 'ArrowDown') findCell(r + 1, c)?.focus();
             else if (e.key === 'ArrowUp') findCell(r - 1, c)?.focus();
+        }
+
+        function clearCheckStyle(input) {
+            input.classList.remove('text-wrong', 'text-correct');
+            input.parentElement.classList.remove('check-wrong', 'check-correct');
         }
 
         function moveFocus(r, c, delta) {
@@ -311,6 +351,7 @@
             if (prevInput) {
                 prevInput.focus();
                 prevInput.value = '';
+                clearCheckStyle(prevInput);
             }
         }
 
@@ -364,30 +405,114 @@
             }
         }
 
+        // --- KONTROLA TAJENKY (LIVE) ---
+        function checkTajenkaLive() {
+            if (tajenkaFound) return; // Pokud už byla nalezena, nekontroluj
+
+            const mask = gameState.tajenkaMask;
+            if (!mask || mask.length === 0) return;
+
+            let isCorrect = true;
+            let solvedWord = "";
+
+            for (let [r, c] of mask) {
+                const inp = findCell(r, c);
+                if (!inp || inp.value.toUpperCase() !== inp.dataset.correct) {
+                    isCorrect = false;
+                    break;
+                }
+                solvedWord += inp.dataset.correct;
+            }
+
+            if (isCorrect) {
+                tajenkaFound = true; // Zabrání opakovanému spuštění
+                showTajenkaModal(solvedWord);
+            }
+        }
+
+        function showTajenkaModal(word) {
+            const modal = document.getElementById('tajenka-modal');
+            const modalContent = document.getElementById('tajenka-modal-content');
+            const mainContent = document.getElementById('main-content');
+            
+            document.getElementById('modal-tajenka-word').innerText = word;
+            
+            modal.classList.remove('hidden');
+            // Animace fade-in
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                mainContent.classList.add('blur-sm'); // Rozostření pozadí
+            }, 10);
+        }
+
+        function continueGame() {
+            const modal = document.getElementById('tajenka-modal');
+            const modalContent = document.getElementById('tajenka-modal-content');
+            const mainContent = document.getElementById('main-content');
+            
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            mainContent.classList.remove('blur-sm');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function finishGameAuto() {
+            continueGame(); // Zavře modal
+            
+            // Vyplní všechna políčka
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(inp => {
+                inp.value = inp.dataset.correct;
+            });
+
+            // Spustí finální kontrolu (zelený efekt)
+            checkGame();
+        }
+
         function checkGame() {
-            let err = 0, empty = 0;
-            document.querySelectorAll('input').forEach(i => {
+            if (checkTimeout) {
+                clearTimeout(checkTimeout);
+                checkTimeout = null;
+            }
+
+            const inputs = document.querySelectorAll('input');
+            let errors = 0;
+            let empty = 0;
+
+            inputs.forEach(i => {
                 const val = i.value.toUpperCase();
-                i.parentElement.classList.remove('bg-red-900', 'bg-green-900');
-                i.style.color = '#ffffff'; // Reset barvy
+                i.classList.remove('text-wrong', 'text-correct');
+                i.parentElement.classList.remove('check-wrong', 'check-correct');
                 
-                if(!val) empty++;
-                else if(val !== i.dataset.correct) {
-                    err++; 
-                    i.parentElement.classList.add('bg-red-900');
-                    i.style.color = '#fca5a5'; // Světle červená
+                if(!val) {
+                    empty++;
+                } else if(val !== i.dataset.correct) {
+                    errors++;
+                    i.parentElement.classList.add('check-wrong');
+                    i.classList.add('text-wrong');
                 } else {
-                    i.parentElement.classList.add('bg-green-900');
-                    i.style.color = '#86efac'; // Světle zelená
+                    i.parentElement.classList.add('check-correct');
+                    i.classList.add('text-correct');
                 }
             });
+
             const status = document.getElementById('status-msg');
-            if(err===0 && empty===0) {
-                status.innerText = "🎉 Perfektní! Vše správně.";
-                status.className = "mt-4 font-bold h-6 text-center text-green-400 animate-bounce";
+
+            if(errors === 0 && empty === 0) {
+                status.innerText = "🎉 KOMPLETNĚ VYLUŠTĚNO! 🎉";
+                status.className = "mt-4 font-bold h-8 text-center text-green-400 animate-bounce text-xl";
             } else {
-                status.innerText = `Chyb: ${err}, Prázdných: ${empty}`;
-                status.className = "mt-4 font-bold h-6 text-center text-red-400";
+                status.innerText = ""; 
+                checkTimeout = setTimeout(() => {
+                    inputs.forEach(i => {
+                        i.classList.remove('text-wrong', 'text-correct');
+                        i.parentElement.classList.remove('check-wrong', 'check-correct');
+                    });
+                }, 3000);
             }
         }
 
@@ -396,9 +521,14 @@
             if(bad.length) {
                 const el = bad[Math.floor(Math.random()*bad.length)];
                 el.value = el.dataset.correct;
-                el.style.color = '#60a5fa'; // Blue 400
+                el.style.color = '#60a5fa'; 
                 el.parentElement.style.backgroundColor = '#1e3a8a';
-                setTimeout(() => el.parentElement.style.backgroundColor = '', 500);
+                setTimeout(() => {
+                    el.parentElement.style.backgroundColor = '';
+                    el.style.color = '#ffffff';
+                    // Po odhalení písmena zkontrolovat, jestli to náhodou nedokončilo tajenku
+                    checkTajenkaLive();
+                }, 1000);
             }
         }
 
