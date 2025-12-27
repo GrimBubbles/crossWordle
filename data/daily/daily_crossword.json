@@ -1,53 +1,425 @@
 {
   "meta": {
     "theme": "Prosincový svátek",
-    "tajenka": "VÁNOCE",
-    "width": 16,
-    "height": 6,
-    "generated_at": "now"
+    "width": 13,
+    "height": 13
   },
-  "grid_data": [
+  "grid": [
+    [
+      "V",
+      "#",
+      "P",
+      "#",
+      "O",
+      "D",
+      "#",
+      "#",
+      "K",
+      "#",
+      "V",
+      "#",
+      "#"
+    ],
+    [
+      "Z",
+      "#",
+      "Ř",
+      "K",
+      "D",
+      "Ů",
+      "#",
+      "#",
+      "R",
+      "S",
+      "Y",
+      "#",
+      "#"
+    ],
+    [
+      "D",
+      "#",
+      "E",
+      "R",
+      "R",
+      "V",
+      "#",
+      "#",
+      "O",
+      "T",
+      "S",
+      "#",
+      "#"
+    ],
+    [
+      "U",
+      "#",
+      "H",
+      "E",
+      "A",
+      "O",
+      "V",
+      "Ě",
+      "K",
+      "Í",
+      "V",
+      "#",
+      "#"
+    ],
+    [
+      "S",
+      "P",
+      "L",
+      "V",
+      "Z",
+      "D",
+      "Á",
+      "L",
+      "E",
+      "N",
+      "Ě",
+      "#",
+      "#"
+    ],
+    [
+      "P",
+      "Ř",
+      "E",
+      "H",
+      "O",
+      "D",
+      "N",
+      "O",
+      "T",
+      "I",
+      "T",
+      "#",
+      "#"
+    ],
+    [
+      "O",
+      "Í",
+      "D",
+      "P",
+      "Z",
+      "#",
+      "O",
+      "S",
+      "L",
+      "O",
+      "L",
+      "#",
+      "#"
+    ],
+    [
+      "Ř",
+      "K",
+      "P",
+      "O",
+      "V",
+      "R",
+      "C",
+      "H",
+      "N",
+      "Í",
+      "I",
+      "#",
+      "#"
+    ],
+    [
+      "Á",
+      "L",
+      "O",
+      "D",
+      "Y",
+      "P",
+      "E",
+      "S",
+      "Á",
+      "#",
+      "T",
+      "#",
+      "#"
+    ],
+    [
+      "D",
+      "A",
+      "M",
+      "K",
+      "K",
+      "O",
+      "#",
+      "T",
+      "V",
+      "#",
+      "I",
+      "#",
+      "#"
+    ],
+    [
+      "A",
+      "D",
+      "S",
+      "L",
+      "L",
+      "L",
+      "#",
+      "Ě",
+      "Y",
+      "#",
+      "S",
+      "#",
+      "#"
+    ],
+    [
+      "T",
+      "N",
+      "T",
+      "A",
+      "Ý",
+      "E",
+      "#",
+      "N",
+      "K",
+      "#",
+      "K",
+      "#",
+      "#"
+    ],
+    [
+      "#",
+      "Ý",
+      "A",
+      "D",
+      "#",
+      "D",
+      "#",
+      "A",
+      "#",
+      "#",
+      "#",
+      "#",
+      "#"
+    ]
+  ],
+  "words": [
     {
-      "row": 0,
-      "word": "ROVNICE",
-      "clue": "Matematický zápis",
-      "start_col": 6,
-      "tajenka_idx_in_word": 2
-    },
-    {
-      "row": 1,
-      "word": "MOKRÁ",
-      "clue": "Namočená",
-      "start_col": 4,
-      "tajenka_idx_in_word": 4
-    },
-    {
-      "row": 2,
-      "word": "ZÁKONITÝ",
-      "clue": "Podle pravidel",
-      "start_col": 4,
-      "tajenka_idx_in_word": 4
-    },
-    {
+      "number": 10,
+      "word": "VĚK",
+      "clue": "Doba života",
       "row": 3,
+      "col": 6,
+      "direction": "H"
+    },
+    {
+      "number": 12,
+      "word": "VZDÁLEN",
+      "clue": "Mimo dosah",
+      "row": 4,
+      "col": 3,
+      "direction": "H"
+    },
+    {
+      "number": 13,
       "word": "PŘEHODNOTIT",
       "clue": "Znovu posoudit",
-      "start_col": 1,
-      "tajenka_idx_in_word": 7
-    },
-    {
-      "row": 4,
-      "word": "ZRCADLO",
-      "clue": "Předmět odrazu",
-      "start_col": 6,
-      "tajenka_idx_in_word": 2
-    },
-    {
       "row": 5,
-      "word": "SOUČET",
-      "clue": "Výsledek sčítání",
-      "start_col": 4,
-      "tajenka_idx_in_word": 4
+      "col": 0,
+      "direction": "H"
+    },
+    {
+      "number": 16,
+      "word": "OSLO",
+      "clue": "Hlavní město Norska",
+      "row": 6,
+      "col": 6,
+      "direction": "H"
+    },
+    {
+      "number": 17,
+      "word": "POVRCHNÍ",
+      "clue": "Nehluboký",
+      "row": 7,
+      "col": 2,
+      "direction": "H"
+    },
+    {
+      "number": 19,
+      "word": "PES",
+      "clue": "Domácí zvíře",
+      "row": 8,
+      "col": 5,
+      "direction": "H"
+    },
+    {
+      "number": 9,
+      "word": "USPOŘÁDAT",
+      "clue": "Vytřídit",
+      "row": 3,
+      "col": 0,
+      "direction": "V"
+    },
+    {
+      "number": 1,
+      "word": "VZDU",
+      "clue": "Zkráceně atmosféra (arch.)",
+      "row": 0,
+      "col": 0,
+      "direction": "V"
+    },
+    {
+      "number": 8,
+      "word": "STÍN",
+      "clue": "Absence světla",
+      "row": 1,
+      "col": 9,
+      "direction": "V"
+    },
+    {
+      "number": 4,
+      "word": "DŮVOD",
+      "clue": "Příčina",
+      "row": 0,
+      "col": 5,
+      "direction": "V"
+    },
+    {
+      "number": 19,
+      "word": "POLE",
+      "clue": "Zemědělská plocha",
+      "row": 8,
+      "col": 5,
+      "direction": "V"
+    },
+    {
+      "number": 22,
+      "word": "LED",
+      "clue": "Ztuhlá voda",
+      "row": 10,
+      "col": 5,
+      "direction": "V"
+    },
+    {
+      "number": 14,
+      "word": "PODKLAD",
+      "clue": "Výchozí materiál",
+      "row": 6,
+      "col": 3,
+      "direction": "V"
+    },
+    {
+      "number": 7,
+      "word": "KREV",
+      "clue": "Tělní tekutina",
+      "row": 1,
+      "col": 3,
+      "direction": "V"
+    },
+    {
+      "number": 15,
+      "word": "ZVYKLÝ",
+      "clue": "Naučený stav",
+      "row": 6,
+      "col": 4,
+      "direction": "V"
+    },
+    {
+      "number": 3,
+      "word": "ODRAZ",
+      "clue": "Zpětný obraz",
+      "row": 0,
+      "col": 4,
+      "direction": "V"
+    },
+    {
+      "number": 6,
+      "word": "VYSVĚTLIT",
+      "clue": "Objasnit",
+      "row": 0,
+      "col": 10,
+      "direction": "V"
+    },
+    {
+      "number": 21,
+      "word": "TISK",
+      "clue": "Proces přenosu textu",
+      "row": 8,
+      "col": 10,
+      "direction": "V"
+    },
+    {
+      "number": 20,
+      "word": "STĚNA",
+      "clue": "Zeď",
+      "row": 8,
+      "col": 7,
+      "direction": "V"
+    },
+    {
+      "number": 11,
+      "word": "PŘÍKLADNÝ",
+      "clue": "Hodný následování",
+      "row": 4,
+      "col": 1,
+      "direction": "V"
+    },
+    {
+      "number": 2,
+      "word": "PŘEHLED",
+      "clue": "Orientace v tématu",
+      "row": 0,
+      "col": 2,
+      "direction": "V"
+    },
+    {
+      "number": 17,
+      "word": "POMSTA",
+      "clue": "Odplata",
+      "row": 7,
+      "col": 2,
+      "direction": "V"
+    },
+    {
+      "number": 18,
+      "word": "NÁVYK",
+      "clue": "Zafixované chování",
+      "row": 7,
+      "col": 8,
+      "direction": "V"
+    },
+    {
+      "number": 5,
+      "word": "KROK",
+      "clue": "Jednotka chůze",
+      "row": 0,
+      "col": 8,
+      "direction": "V"
     }
-  ]
+  ],
+  "tajenka_mask": [
+    [
+      3,
+      6
+    ],
+    [
+      4,
+      6
+    ],
+    [
+      5,
+      6
+    ],
+    [
+      6,
+      6
+    ],
+    [
+      7,
+      6
+    ],
+    [
+      8,
+      6
+    ]
+  ],
+  "tajenka_clue": "Prosincový svátek"
 }
