@@ -2,7 +2,7 @@
 <html lang="cs" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dnešní Křížovka</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -25,6 +25,8 @@
         body {
             background-color: #111827;
             color: #e5e7eb;
+            /* Zamezení pull-to-refresh na mobilu, který může rušit při hraní */
+            overscroll-behavior-y: contain; 
         }
 
         /* Mřížka */
@@ -42,39 +44,38 @@
             position: relative;
             background-color: #1f2937;
             aspect-ratio: 1;
-            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         .cell.black { background-color: #000000; }
         .cell.tajenka { background-color: #854d0e; color: #fef08a; } 
         
-        /* Zvýraznění aktivního slova */
         .cell.active-highlight { background-color: #1e40af !important; } 
         .cell.tajenka.active-highlight { background-color: #a16207 !important; }
 
-        /* KONTROLA - Barvy */
         .cell.check-correct { background-color: #064e3b !important; }
         .cell.check-wrong { background-color: #7f1d1d !important; }
 
         /* Inputy */
         .cell input {
             width: 100%; height: 100%;
-            text-align: center; font-size: 1.1rem; font-weight: bold;
+            text-align: center; 
+            font-weight: bold;
             text-transform: uppercase; border: none; background: transparent;
             outline: none; padding: 0; margin: 0; 
             color: #ffffff;
             border-radius: 0; cursor: default;
             caret-color: transparent;
-            transition: color 0.5s ease-in-out;
+            /* Font size se nastavuje dynamicky v JS nebo media queries */
         }
         
         .cell input.text-correct { color: #86efac !important; }
         .cell input.text-wrong { color: #fca5a5 !important; }
 
-        /* Čísla */
+        /* Čísla - menší font na mobilu */
         .cell-number {
-            position: absolute; top: 1px; left: 2px;
-            font-size: 0.6rem; color: #9ca3af; pointer-events: none; line-height: 1;
+            position: absolute; top: 0.5px; left: 1px;
+            font-size: 0.55rem; color: #9ca3af; pointer-events: none; line-height: 1;
         }
         
         /* Legenda */
@@ -86,92 +87,104 @@
             background-color: #1e3a8a; border-left: 4px solid #60a5fa;
         }
         
-        /* Loader */
-        .loader {
-            border: 4px solid #374151; border-top: 4px solid #3b82f6;
-            border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite; margin: 20px auto;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         /* Modal Backdrop */
         .modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.75);
+            background-color: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(4px);
         }
 
-        @media (max-width: 600px) { .cell input { font-size: 0.85rem; } }
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans relative">
+<body class="min-h-screen flex flex-col font-sans relative overflow-x-hidden">
 
-    <!-- MODÁLNÍ OKNO PRO TAJENKU -->
+    <!-- MODÁLNÍ OKNO -->
     <div id="tajenka-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop opacity-0 transition-opacity duration-300">
-        <div class="bg-gray-800 border-2 border-yellow-600 rounded-2xl shadow-2xl max-w-md w-full p-6 text-center transform scale-95 transition-transform duration-300" id="tajenka-modal-content">
-            <div class="text-6xl mb-4">🏆</div>
-            <h2 class="text-3xl font-bold text-yellow-400 mb-2">Tajenka vyluštěna!</h2>
-            <p class="text-gray-300 mb-6">Gratuluji, tajenka je správně.</p>
+        <div class="bg-gray-800 border-2 border-yellow-600 rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center transform scale-95 transition-transform duration-300" id="tajenka-modal-content">
+            <div class="text-5xl mb-4">🏆</div>
+            <h2 class="text-2xl font-bold text-yellow-400 mb-2">Tajenka vyluštěna!</h2>
+            <p class="text-gray-300 mb-6 text-sm">Gratuluji, tajenka je správně.</p>
             
-            <div class="bg-gray-900 p-4 rounded-lg mb-8 border border-gray-700">
-                <p class="text-sm text-gray-500 uppercase tracking-widest mb-1">Řešení</p>
-                <p id="modal-tajenka-word" class="text-2xl font-bold text-white tracking-widest">---</p>
+            <div class="bg-gray-900 p-3 rounded-lg mb-6 border border-gray-700">
+                <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Řešení</p>
+                <p id="modal-tajenka-word" class="text-xl font-bold text-white tracking-widest">---</p>
             </div>
 
-            <div class="flex flex-col gap-3">
-                <button onclick="continueGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold transition shadow-lg">
+            <div class="flex flex-col gap-2">
+                <button onclick="continueGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition shadow-lg text-sm">
                     Pokračovat v luštění
                 </button>
-                <button onclick="finishGameAuto()" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 py-3 rounded-xl font-bold transition">
+                <button onclick="finishGameAuto()" class="w-full bg-gray-700 hover:bg-gray-600 text-gray-200 py-3 rounded-lg font-bold transition text-sm">
                     Vyplnit zbytek a skončit
                 </button>
             </div>
         </div>
     </div>
 
-    <main class="flex-grow p-2 md:p-4 blur-0 transition-all duration-300" id="main-content">
-        <div class="max-w-7xl mx-auto bg-gray-800 rounded-xl shadow-2xl overflow-hidden min-h-[600px] border border-gray-700">
-            <header class="bg-gray-900 text-white p-4 text-center border-b border-gray-700">
-                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-blue-400">Dnešní Křížovka</h1>
-                <div class="mt-2 inline-block bg-gray-700 px-4 py-1 rounded-full text-sm border border-gray-600">
-                    Téma: <span id="theme-display" class="font-bold text-blue-300">Načítání...</span>
+    <main class="flex-grow p-1 md:p-4 blur-0 transition-all duration-300 w-full max-w-full" id="main-content">
+        <div class="max-w-7xl mx-auto bg-gray-800 md:rounded-xl shadow-none md:shadow-2xl overflow-hidden min-h-[100dvh] md:min-h-[600px] border-none md:border border-gray-700 flex flex-col">
+            
+            <!-- Hlavička -->
+            <header class="bg-gray-900 text-white p-3 text-center border-b border-gray-700 shrink-0">
+                <h1 class="text-xl md:text-3xl font-extrabold tracking-tight text-blue-400">Dnešní Křížovka</h1>
+                <div class="mt-1 inline-block bg-gray-700 px-3 py-0.5 rounded-full text-xs border border-gray-600">
+                    Téma: <span id="theme-display" class="font-bold text-blue-300">...</span>
                 </div>
             </header>
 
             <div id="loading-state" class="py-20 text-center">
-                <div class="loader"></div>
-                <p class="text-gray-400 mt-4">Generuji mřížku...</p>
+                <!-- Simple loader SVG -->
+                <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-gray-400 mt-4 text-sm">Generuji mřížku...</p>
             </div>
 
-            <div id="game-content" class="hidden flex flex-col lg:flex-row h-full">
-                <!-- Mřížka -->
-                <div class="flex-1 p-4 flex flex-col items-center justify-start border-r border-gray-700">
-                    <div id="grid-container" class="crossword-grid shadow-xl mb-6"></div>
+            <div id="game-content" class="hidden flex flex-col lg:flex-row h-full grow">
+                <!-- Levá část: Mřížka -->
+                <div class="flex-1 p-2 md:p-4 flex flex-col items-center justify-start lg:border-r border-gray-700 w-full">
                     
-                    <div class="flex gap-2 w-full justify-center max-w-sm">
-                        <button onclick="checkGame()" class="flex-1 bg-green-700 hover:bg-green-600 text-white py-3 rounded shadow font-bold transition duration-200">✓ Zkontrolovat</button>
-                        <button onclick="revealLetter()" class="flex-1 bg-yellow-700 hover:bg-yellow-600 text-white py-3 rounded shadow font-bold transition duration-200">? Pomoc</button>
+                    <!-- Wrapper pro horizontální scroll na extra malých displejích -->
+                    <div class="w-full overflow-x-auto pb-2 flex justify-center">
+                        <div id="grid-container" class="crossword-grid shadow-xl mb-4 shrink-0"></div>
                     </div>
                     
-                    <div id="status-msg" class="mt-4 font-bold h-8 text-center text-xl transition-all duration-500"></div>
+                    <div class="flex gap-2 w-full justify-center max-w-sm shrink-0">
+                        <button onclick="checkGame()" class="flex-1 bg-green-700 hover:bg-green-600 text-white py-2.5 rounded shadow font-bold transition text-sm flex items-center justify-center gap-1">
+                            <span>✓</span> <span class="hidden sm:inline">Zkontrolovat</span>
+                        </button>
+                        <button onclick="revealLetter()" class="flex-1 bg-yellow-700 hover:bg-yellow-600 text-white py-2.5 rounded shadow font-bold transition text-sm flex items-center justify-center gap-1">
+                            <span>?</span> <span class="hidden sm:inline">Pomoc</span>
+                        </button>
+                    </div>
+                    
+                    <div id="status-msg" class="mt-2 font-bold h-6 text-center text-sm sm:text-lg transition-all duration-500 shrink-0"></div>
                 </div>
 
-                <!-- Legenda -->
-                <div class="w-full lg:w-96 bg-gray-850 p-4 flex flex-col h-[500px] lg:h-auto overflow-hidden">
-                    <h3 class="font-bold text-gray-400 mb-2 border-b border-gray-700 pb-2">LEGENDA</h3>
-                    <div class="overflow-y-auto flex-1 pr-2 space-y-6 custom-scrollbar">
+                <!-- Pravá část: Legenda -->
+                <div class="w-full lg:w-96 bg-gray-850 p-3 md:p-4 flex flex-col h-[40vh] lg:h-auto border-t lg:border-t-0 border-gray-700">
+                    <h3 class="font-bold text-gray-400 mb-2 text-sm border-b border-gray-700 pb-1">LEGENDA</h3>
+                    <div class="overflow-y-auto flex-1 pr-2 space-y-4 custom-scrollbar">
                         
-                        <div class="bg-yellow-900/30 p-3 rounded border border-yellow-800/50">
-                            <span class="text-xs font-bold text-yellow-500 uppercase tracking-wider">Tajenka (svisle)</span>
-                            <div id="tajenka-clue" class="font-bold text-yellow-100 mt-1">...</div>
+                        <div class="bg-yellow-900/20 p-2 rounded border border-yellow-800/40">
+                            <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-wider">Tajenka (svisle)</span>
+                            <div id="tajenka-clue" class="font-bold text-yellow-100 text-sm mt-0.5">...</div>
                         </div>
 
-                        <div>
-                            <h4 class="font-bold text-xs text-gray-500 uppercase mb-2">Vodorovně</h4>
-                            <ul id="clues-across" class="space-y-1 text-sm"></ul>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-xs text-gray-500 uppercase mb-2">Svisle</h4>
-                            <ul id="clues-down" class="space-y-1 text-sm"></ul>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                            <div>
+                                <h4 class="font-bold text-[10px] text-gray-500 uppercase mb-1">Vodorovně</h4>
+                                <ul id="clues-across" class="space-y-1 text-xs sm:text-sm text-gray-300"></ul>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-[10px] text-gray-500 uppercase mb-1">Svisle</h4>
+                                <ul id="clues-down" class="space-y-1 text-xs sm:text-sm text-gray-300"></ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -185,20 +198,28 @@
         let gameState = { grid: [], width: 16, height: 16, words: [], tajenkaMask: [] };
         let currentDirection = 'H'; 
         let checkTimeout = null;
-        let tajenkaFound = false; // Příznak, zda už byla tajenka nalezena (aby okno nevyskakovalo pořád)
+        let tajenkaFound = false;
 
         async function init() {
             try {
                 const res = await fetch(`${JSON_URL}?t=${Date.now()}`);
-                if (!res.ok) throw new Error("Nelze načíst data");
+                if (!res.ok) throw new Error("Data nedostupná");
                 const data = await res.json();
                 processData(data);
                 renderGame();
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('game-content').classList.remove('hidden');
+                
+                // Přepočítat velikost při změně velikosti okna (otočení mobilu)
+                window.addEventListener('resize', () => {
+                    // Debounce pro výkon
+                    clearTimeout(window.resizeTimer);
+                    window.resizeTimer = setTimeout(renderGame, 100);
+                });
+
             } catch (e) {
                 console.error(e);
-                document.getElementById('loading-state').innerHTML = `<p class='text-red-500'>Chyba: ${e.message}</p>`;
+                document.getElementById('loading-state').innerHTML = `<p class='text-red-500 text-sm'>Chyba: ${e.message}</p>`;
             }
         }
 
@@ -209,7 +230,7 @@
             gameState.width = data.meta.width;
             gameState.height = data.meta.height;
             gameState.words = data.words;
-            gameState.tajenkaMask = data.tajenka_mask || []; // Uložíme masku tajenky globálně
+            gameState.tajenkaMask = data.tajenka_mask || [];
             
             if (data.grid) {
                 gameState.grid = data.grid.map((row, r) => row.map((char, c) => ({
@@ -236,49 +257,88 @@
 
         function renderGame() {
             const container = document.getElementById('grid-container');
+            // Uložíme si aktuální hodnoty inputů, abychom je po přerenderování vrátili
+            const currentValues = {};
+            container.querySelectorAll('input').forEach(inp => {
+                if (inp.value) currentValues[`${inp.dataset.r},${inp.dataset.c}`] = inp.value;
+            });
+
+            container.innerHTML = ''; // Vyčistit pro překreslení
             const listAcross = document.getElementById('clues-across');
             const listDown = document.getElementById('clues-down');
+            
+            // Pokud je to první render, vyčistíme legendu, jinak necháme (zbytečné mazat)
+            if (listAcross.children.length === 0) {
+                renderClues(listAcross, listDown);
+            }
 
             container.style.gridTemplateColumns = `repeat(${gameState.width}, 1fr)`;
-            const size = Math.min(32, Math.floor((window.innerWidth - 32) / gameState.width));
+            
+            // --- VÝPOČET VELIKOSTI BUŇKY ---
+            // Získáme šířku rodiče (viewport - padding)
+            const availableWidth = Math.min(window.innerWidth - 16, 800); // 16px padding celkem
+            const gapSize = 1;
+            const totalGaps = (gameState.width - 1) * gapSize;
+            const borderSize = 4; // 2px border z každé strany containeru
+            
+            // Kolik zbývá na buňky
+            let cellSize = Math.floor((availableWidth - totalGaps - borderSize) / gameState.width);
+            
+            // Omezíme max velikost (na PC) a min velikost (aby to bylo k přečtení)
+            cellSize = Math.min(32, cellSize); 
+            // Na mobilu může být cellSize třeba 20px. To je málo na input, ale OK pro zobrazení.
+            
+            // Dynamická velikost písma podle velikosti buňky
+            const fontSize = Math.max(10, cellSize * 0.65) + 'px';
 
             gameState.grid.forEach((row, r) => {
                 row.forEach((cell, c) => {
                     const div = document.createElement('div');
-                    div.style.width = `${size}px`; div.style.height = `${size}px`;
+                    div.style.width = `${cellSize}px`; 
+                    div.style.height = `${cellSize}px`;
                     
                     if (cell.isBlack) {
                         div.className = 'cell black';
                     } else {
                         div.className = `cell ${cell.isTajenka ? 'tajenka' : ''}`;
-                        if (cell.number) div.innerHTML += `<span class="cell-number">${cell.number}</span>`;
+                        if (cell.number) {
+                            div.innerHTML += `<span class="cell-number" style="font-size: ${Math.max(8, cellSize * 0.3)}px">${cell.number}</span>`;
+                        }
                         
                         const input = document.createElement('input');
                         input.dataset.r = r; input.dataset.c = c;
                         input.dataset.correct = cell.char;
                         input.maxLength = 1;
+                        input.style.fontSize = fontSize;
+                        
+                        // Obnovit hodnotu
+                        if (currentValues[`${r},${c}`]) input.value = currentValues[`${r},${c}`];
                         
                         input.addEventListener('keydown', handleKeyInput);
                         input.addEventListener('mousedown', (e) => handleCellClick(e, r, c, cell.wordsHere));
                         input.addEventListener('dblclick', () => toggleDirection());
                         input.addEventListener('focus', () => highlightActiveWord(r, c));
-                        // Kontrola tajenky při každé změně
-                        input.addEventListener('input', () => {
-                            // Malé zpoždění, aby se stihla zapsat hodnota
-                            setTimeout(checkTajenkaLive, 100);
-                        });
+                        input.addEventListener('input', () => setTimeout(checkTajenkaLive, 100));
 
                         div.appendChild(input);
                     }
                     container.appendChild(div);
                 });
             });
+            
+            // Obnovit highlight po překreslení
+            const active = document.activeElement;
+            if (active && active.tagName === 'INPUT') {
+                highlightActiveWord(+active.dataset.r, +active.dataset.c);
+            }
+        }
 
+        function renderClues(listAcross, listDown) {
             gameState.words.sort((a,b) => a.number - b.number).forEach(w => {
                 const li = document.createElement('li');
                 li.id = `clue-${w.number}-${w.direction}`;
                 li.className = 'clue-item p-1 rounded flex gap-2';
-                li.innerHTML = `<span class="font-bold text-blue-400 w-5 text-right">${w.number}.</span><span>${w.clue}</span>`;
+                li.innerHTML = `<span class="font-bold text-blue-400 min-w-[1.2em] text-right">${w.number}.</span><span>${w.clue}</span>`;
                 
                 li.onclick = () => {
                     currentDirection = w.direction;
@@ -315,16 +375,12 @@
                 e.preventDefault();
                 e.target.value = e.key.toUpperCase();
                 moveFocus(r, c, 1);
-                // Kontrola tajenky i zde pro jistotu
                 setTimeout(checkTajenkaLive, 50);
             }
             else if (e.key === 'Backspace') {
                 e.preventDefault();
-                if (e.target.value !== '') {
-                    e.target.value = '';
-                } else {
-                    moveFocusBackAndClear(r, c);
-                }
+                if (e.target.value !== '') e.target.value = '';
+                else moveFocusBackAndClear(r, c);
             }
             else if (e.key === 'ArrowRight') findCell(r, c + 1)?.focus();
             else if (e.key === 'ArrowLeft') findCell(r, c - 1)?.focus();
@@ -356,6 +412,7 @@
         }
 
         function findCell(r, c) { return document.querySelector(`input[data-r="${r}"][data-c="${c}"]`); }
+        
         function isBlackCell(r, c) {
             if (r < 0 || r >= gameState.height || c < 0 || c >= gameState.width) return true;
             return gameState.grid[r][c].isBlack;
@@ -407,8 +464,7 @@
 
         // --- KONTROLA TAJENKY (LIVE) ---
         function checkTajenkaLive() {
-            if (tajenkaFound) return; // Pokud už byla nalezena, nekontroluj
-
+            if (tajenkaFound) return;
             const mask = gameState.tajenkaMask;
             if (!mask || mask.length === 0) return;
 
@@ -425,7 +481,7 @@
             }
 
             if (isCorrect) {
-                tajenkaFound = true; // Zabrání opakovanému spuštění
+                tajenkaFound = true;
                 showTajenkaModal(solvedWord);
             }
         }
@@ -438,11 +494,10 @@
             document.getElementById('modal-tajenka-word').innerText = word;
             
             modal.classList.remove('hidden');
-            // Animace fade-in
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 modalContent.classList.remove('scale-95');
-                mainContent.classList.add('blur-sm'); // Rozostření pozadí
+                mainContent.classList.add('blur-sm');
             }, 10);
         }
 
@@ -454,22 +509,13 @@
             modal.classList.add('opacity-0');
             modalContent.classList.add('scale-95');
             mainContent.classList.remove('blur-sm');
-            
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
         function finishGameAuto() {
-            continueGame(); // Zavře modal
-            
-            // Vyplní všechna políčka
+            continueGame();
             const inputs = document.querySelectorAll('input');
-            inputs.forEach(inp => {
-                inp.value = inp.dataset.correct;
-            });
-
-            // Spustí finální kontrolu (zelený efekt)
+            inputs.forEach(inp => { inp.value = inp.dataset.correct; });
             checkGame();
         }
 
@@ -478,7 +524,6 @@
                 clearTimeout(checkTimeout);
                 checkTimeout = null;
             }
-
             const inputs = document.querySelectorAll('input');
             let errors = 0;
             let empty = 0;
@@ -488,9 +533,8 @@
                 i.classList.remove('text-wrong', 'text-correct');
                 i.parentElement.classList.remove('check-wrong', 'check-correct');
                 
-                if(!val) {
-                    empty++;
-                } else if(val !== i.dataset.correct) {
+                if(!val) empty++;
+                else if(val !== i.dataset.correct) {
                     errors++;
                     i.parentElement.classList.add('check-wrong');
                     i.classList.add('text-wrong');
@@ -501,10 +545,9 @@
             });
 
             const status = document.getElementById('status-msg');
-
             if(errors === 0 && empty === 0) {
                 status.innerText = "🎉 KOMPLETNĚ VYLUŠTĚNO! 🎉";
-                status.className = "mt-4 font-bold h-8 text-center text-green-400 animate-bounce text-xl";
+                status.className = "mt-4 font-bold h-8 text-center text-green-400 animate-bounce text-lg sm:text-xl";
             } else {
                 status.innerText = ""; 
                 checkTimeout = setTimeout(() => {
@@ -526,7 +569,6 @@
                 setTimeout(() => {
                     el.parentElement.style.backgroundColor = '';
                     el.style.color = '#ffffff';
-                    // Po odhalení písmena zkontrolovat, jestli to náhodou nedokončilo tajenku
                     checkTajenkaLive();
                 }, 1000);
             }
