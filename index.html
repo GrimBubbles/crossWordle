@@ -107,7 +107,7 @@
 
     <script>
         const JSON_URL = 'data/daily/daily_crossword.json';
-        const STORAGE_KEY_PREFIX = 'crossword_progress_'; // Klíč pro localStorage
+        const STORAGE_KEY_PREFIX = 'crossword_progress_'; 
         
         let gameState = { grid: [], width: 16, height: 16, words: [], tajenkaMask: [], date: '' };
         let currentDirection = 'H'; 
@@ -121,10 +121,7 @@
                 const data = await res.json();
                 processData(data);
                 renderGame();
-                
-                // Načíst uložený postup
                 loadProgress();
-
                 document.getElementById('loading-state').classList.add('hidden');
                 document.getElementById('game-content').classList.remove('hidden');
                 window.addEventListener('resize', () => {
@@ -140,13 +137,11 @@
         function processData(data) {
             document.getElementById('theme-display').innerText = data.meta.theme;
             document.getElementById('tajenka-clue').innerText = data.tajenka_clue || "Tajenka";
-            
             gameState.width = data.meta.width;
             gameState.height = data.meta.height;
             gameState.words = data.words;
             gameState.tajenkaMask = data.tajenka_mask || [];
-            gameState.date = data.meta.date || new Date().toISOString().split('T')[0]; // Uložíme datum pro klíč
-            
+            gameState.date = data.meta.date || new Date().toISOString().split('T')[0];
             if (data.grid) {
                 gameState.grid = data.grid.map((row, r) => row.map((char, c) => ({
                     char: char, isBlack: char === '#', isTajenka: isTajenkaCell(r, c, data.tajenka_mask),
@@ -155,22 +150,12 @@
             }
         }
 
-        // --- UKLÁDÁNÍ POSTUPU (LocalStorage) ---
         function saveProgress() {
             if (!gameState.date) return;
             const progress = {};
             const inputs = document.querySelectorAll('input');
-            inputs.forEach(inp => {
-                if (inp.value) {
-                    progress[`${inp.dataset.r},${inp.dataset.c}`] = inp.value;
-                }
-            });
-            
-            const dataToSave = {
-                values: progress,
-                tajenkaFound: tajenkaFound
-            };
-            
+            inputs.forEach(inp => { if (inp.value) progress[`${inp.dataset.r},${inp.dataset.c}`] = inp.value; });
+            const dataToSave = { values: progress, tajenkaFound: tajenkaFound };
             localStorage.setItem(STORAGE_KEY_PREFIX + gameState.date, JSON.stringify(dataToSave));
         }
 
@@ -178,25 +163,16 @@
             if (!gameState.date) return;
             const savedRaw = localStorage.getItem(STORAGE_KEY_PREFIX + gameState.date);
             if (!savedRaw) return;
-
             try {
                 const saved = JSON.parse(savedRaw);
                 const values = saved.values || {};
-                
-                // Obnovení hodnot
                 for (const [key, val] of Object.entries(values)) {
                     const [r, c] = key.split(',');
                     const inp = findCell(r, c);
                     if (inp) inp.value = val;
                 }
-
-                // Pokud už byla tajenka nalezena dříve, neukazuj modal znovu, ale nastav stav
-                if (saved.tajenkaFound) {
-                    tajenkaFound = true;
-                }
-            } catch (e) {
-                console.error("Chyba při načítání postupu:", e);
-            }
+                if (saved.tajenkaFound) tajenkaFound = true;
+            } catch (e) { console.error(e); }
         }
 
         function isTajenkaCell(r, c, mask) { return mask && mask.some(([tr, tc]) => tr === r && tc === c); }
@@ -257,7 +233,7 @@
                         input.addEventListener('dblclick', () => toggleDirection());
                         input.addEventListener('focus', () => highlightActiveWord(r, c));
                         input.addEventListener('input', () => {
-                            saveProgress(); // Uložit při každé změně
+                            saveProgress(); 
                             setTimeout(checkTajenkaLive, 100);
                         });
 
@@ -279,24 +255,107 @@
                 li.onclick = () => {
                     currentDirection = w.direction;
                     const inp = findCell(w.row, w.col);
-                    if(inp) { inp.focus(); inp.select(); }
+                    if(inp) { 
+                        // Kliknutí na legendu vždy skočí na první prázdné
+                        jumpToFirstEmptyOrFocus(inp, w.word.length, w.direction);
+                    }
                 };
                 if (w.direction === 'H') listAcross.appendChild(li);
                 else listDown.appendChild(li);
             });
         }
 
+        // --- Logika Ovládání s "Jump to Empty" ---
+
         function handleCellClick(e, r, c, wordsHere) {
-            if (document.activeElement === e.target) return;
+            // Zabráníme defaultnímu focusu, abychom ho mohli řídit sami
+            e.preventDefault(); 
+
+            // Chytrá detekce směru
             if (wordsHere.hasH && !wordsHere.hasV) currentDirection = 'H';
             else if (wordsHere.hasV && !wordsHere.hasH) currentDirection = 'V';
-            highlightActiveWord(r, c);
+            
+            // Zjistíme rozsah slova pro aktuální směr
+            const range = getWordRange(r, c, currentDirection);
+            
+            // Logika skoku na první prázdné
+            let targetInput = null;
+            
+            // Projdeme slovo od začátku do konce
+            for (let i = range.start; i <= range.end; i++) {
+                let cellInput;
+                if (currentDirection === 'H') cellInput = findCell(r, i);
+                else cellInput = findCell(i, c);
+                
+                if (cellInput && cellInput.value === '') {
+                    targetInput = cellInput;
+                    break; // Našli jsme první prázdné, končíme
+                }
+            }
+
+            // Pokud jsme nenašli žádné prázdné (slovo je plné), focusneme to, na co se kliklo
+            if (!targetInput) {
+                targetInput = e.target;
+            }
+
+            // Aplikujeme focus a highlight
+            if (targetInput) {
+                targetInput.focus();
+                // Vyvoláme highlight manuálně, protože preventDefault zrušil nativní focus event
+                highlightActiveWord(+targetInput.dataset.r, +targetInput.dataset.c);
+            }
         }
 
         function toggleDirection() {
             currentDirection = currentDirection === 'H' ? 'V' : 'H';
             const active = document.activeElement;
             if (active && active.tagName === 'INPUT') highlightActiveWord(+active.dataset.r, +active.dataset.c);
+        }
+
+        // Pomocná funkce pro skok z legendy
+        function jumpToFirstEmptyOrFocus(startInput, length, direction) {
+            const r = +startInput.dataset.r;
+            const c = +startInput.dataset.c;
+            
+            let target = null;
+            for (let i = 0; i < length; i++) {
+                let cellInput;
+                if (direction === 'H') cellInput = findCell(r, c + i);
+                else cellInput = findCell(r + i, c);
+                
+                if (cellInput && cellInput.value === '') {
+                    target = cellInput;
+                    break;
+                }
+            }
+            if (!target) target = startInput;
+            target.focus();
+            target.select();
+        }
+
+        // Zjištění rozsahu slova (pro click logiku)
+        function getWordRange(r, c, direction) {
+            let start = (direction === 'H') ? c : r;
+            let end = start;
+
+            // Hledání začátku
+            while (true) {
+                let prev = start - 1;
+                let checkR = (direction === 'H') ? r : prev;
+                let checkC = (direction === 'H') ? prev : c;
+                if (prev < 0 || isBlackCell(checkR, checkC)) break;
+                start--;
+            }
+            // Hledání konce
+            const limit = (direction === 'H') ? gameState.width : gameState.height;
+            while (true) {
+                let next = end + 1;
+                let checkR = (direction === 'H') ? r : next;
+                let checkC = (direction === 'H') ? next : c;
+                if (next >= limit || isBlackCell(checkR, checkC)) break;
+                end++;
+            }
+            return { start, end };
         }
 
         function handleKeyInput(e) {
@@ -307,7 +366,7 @@
             if (e.key.match(/^[a-zA-ZáčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]$/)) {
                 e.preventDefault();
                 e.target.value = e.key.toUpperCase();
-                saveProgress(); // Uložit
+                saveProgress();
                 moveFocus(r, c, 1);
                 setTimeout(checkTajenkaLive, 50);
             }
@@ -341,7 +400,7 @@
             if (prevInput) {
                 prevInput.focus();
                 prevInput.value = '';
-                saveProgress(); // Uložit smazání
+                saveProgress(); 
                 clearCheckStyle(prevInput);
             }
         }
@@ -356,27 +415,13 @@
             document.querySelectorAll('.active-highlight').forEach(el => el.classList.remove('active-highlight'));
             document.querySelectorAll('.active-clue').forEach(el => el.classList.remove('active-clue'));
 
-            let start = (currentDirection === 'H') ? c : r;
-            let end = start;
-            while (true) {
-                let prev = start - 1;
-                let checkR = (currentDirection === 'H') ? r : prev;
-                let checkC = (currentDirection === 'H') ? prev : c;
-                if (prev < 0 || isBlackCell(checkR, checkC)) break;
-                start--;
-            }
-            const limit = (currentDirection === 'H') ? gameState.width : gameState.height;
-            while (true) {
-                let next = end + 1;
-                let checkR = (currentDirection === 'H') ? r : next;
-                let checkC = (currentDirection === 'H') ? next : c;
-                if (next >= limit || isBlackCell(checkR, checkC)) break;
-                end++;
-            }
-            for (let i = start; i <= end; i++) {
+            const range = getWordRange(r, c, currentDirection);
+
+            for (let i = range.start; i <= range.end; i++) {
                 let cellInput = (currentDirection === 'H') ? findCell(r, i) : findCell(i, c);
                 if (cellInput) cellInput.parentElement.classList.add('active-highlight');
             }
+
             const activeWord = gameState.words.find(w => {
                 if (w.direction !== currentDirection) return false;
                 if (currentDirection === 'H') return w.row === r && c >= w.col && c < w.col + w.word.length;
